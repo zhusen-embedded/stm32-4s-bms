@@ -24,3 +24,23 @@ prot_state_t protect_check(const float *cells, uint8_t n, float cur, float temp)
   }
   return s_state;
 }
+
+
+static uint16_t s_fault;
+
+prot_state_t protect_state(void)
+{
+    return s_state;
+}
+
+uint16_t protect_fault_code(void)
+{
+    return s_fault;
+}
+
+void protect_clear(void)
+{
+    /* 故障锁存，必须显式清才能恢复，防止自恢复后反复通断 */
+    s_state = PROT_OK;
+    s_fault = 0;
+}

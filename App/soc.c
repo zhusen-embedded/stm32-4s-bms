@@ -46,3 +46,10 @@ void soc_rest_correct(float cell_v, float current_a)
 }
 
 float soc_get(void) { return s_soc; }
+
+
+void soc_reset(void)
+{
+    s_soc = 100.0f;
+    s_rest_ms = 0;
+}

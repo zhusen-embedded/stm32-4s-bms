@@ -29,3 +29,10 @@ void balance_post_sample(void)
 {
   balance_apply(s_mask);
 }
+
+
+void balance_apply(uint8_t mask)
+{
+    /* 均衡引脚是 P1.0~P1.3，低电平导通泄放 */
+    GPIOA->BSRR = (uint32_t)(~mask & 0x0F) << 16;
+}

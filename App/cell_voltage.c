@@ -20,3 +20,11 @@ void cell_calib(float gain, float offset)
   s_gain = gain;
   s_offset = offset;
 }
+
+
+void cell_sample_all(float *out, uint8_t n)
+{
+    for (uint8_t i = 0; i < n; i++) {
+        out[i] = cell_voltage(i);
+    }
+}
