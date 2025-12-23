@@ -1,3 +1,4 @@
+﻿#include <stdint.h>
 #include "balance.h"
 
 #define BAL_DIFF_MV   30

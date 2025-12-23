@@ -1,3 +1,4 @@
+﻿#include <stdint.h>
 #include "soc.h"
 
 #define CAP_AH   10.0f

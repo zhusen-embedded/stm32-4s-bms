@@ -1,3 +1,4 @@
+﻿#include <stdint.h>
 #include "bsp_ina226.h"
 
 #define INA226_ADDR   (0x40 << 1)

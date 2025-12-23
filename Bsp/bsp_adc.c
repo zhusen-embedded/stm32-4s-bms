@@ -1,3 +1,4 @@
+﻿#include <stdint.h>
 #include "bsp_adc.h"
 
 uint16_t g_adc_dma[ADC_CH_NUM];
