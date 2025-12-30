@@ -1,30 +1,35 @@
 #include "cell_voltage.h"
-#include "bsp_adc.h"
 
-// 分压比 1:4，参考 3.3 V / 4096
-#define DIV_RATIO   4.0f
-#define VREF        3.3f
-#define ADC_FULL    4096.0f
-
-static float s_gain = 1.0f;
-static float s_offset = 0.0f;
-
-float cell_voltage(uint8_t ch)
+float cell_raw_to_volt(uint16_t raw, const cell_calib_t *cal)
 {
-  float v = bsp_adc_raw(ch) * VREF / ADC_FULL * DIV_RATIO;
-  return v * s_gain + s_offset;
+    float v = (float)raw * CELL_VREF / CELL_ADC_FULL * CELL_DIV_RATIO;
+    if (cal) v = v * cal->gain + cal->offset;
+    return v;
 }
 
-void cell_calib(float gain, float offset)
+float cell_read_filtered(uint16_t raw, med_filter_t *f, const cell_calib_t *cal)
 {
-  s_gain = gain;
-  s_offset = offset;
+    med_push(f, raw);
+    return cell_raw_to_volt(med_get(f), cal);
 }
 
-
-void cell_sample_all(float *out, uint8_t n)
+void cell_calib_set(cell_calib_t *cal, float gain, float offset)
 {
-    for (uint8_t i = 0; i < n; i++) {
-        out[i] = cell_voltage(i);
-    }
+    if (cal == 0) return;
+    cal->gain = gain;
+    cal->offset = offset;
+}
+
+void cell_calib_solve(cell_calib_t *cal,
+                      float v_meas_lo, float v_true_lo,
+                      float v_meas_hi, float v_true_hi)
+{
+    if (cal == 0) return;
+
+    float d = v_meas_hi - v_meas_lo;
+    /* 两点重合解不出来，保持默认系数 */
+    if (d > -1e-6f && d < 1e-6f) return;
+
+    cal->gain = (v_true_hi - v_true_lo) / d;
+    cal->offset = v_true_lo - v_meas_lo * cal->gain;
 }
