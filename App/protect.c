@@ -1,32 +1,43 @@
 #include "protect.h"
 
-#define OV_MV     4250
-#define UV_MV     2800
-#define OC_A      20.0f
-#define OT_C      65.0f
-
 static prot_state_t s_state = PROT_OK;
+static uint16_t     s_fault;
 
-prot_state_t protect_check(const float *cells, uint8_t n, float cur, float temp)
+prot_state_t protect_eval(const float *cells, uint8_t n, float cur, float temp)
 {
-  uint8_t i;
+    if (cells == 0 || n == 0) return s_state;
 
-  for (i = 0; i < n; i++) {
-    if (cells[i] * 1000.0f > OV_MV) { s_state = PROT_OV; break; }
-    if (cells[i] * 1000.0f < UV_MV) { s_state = PROT_UV; break; }
-  }
-  if (cur > OC_A)   s_state = PROT_OC;
-  if (temp > OT_C)  s_state = PROT_OT;
+    /* 已锁存就不重复判定，必须显式 clear */
+    if (s_state != PROT_OK) return s_state;
 
-  if (s_state != PROT_OK) {
-    mos_disable();   // 10 ms 内断主回路
-    fault_latch(s_state);
-  }
-  return s_state;
+    for (uint8_t i = 0; i < n; i++) {
+        float mv = cells[i] * 1000.0f;
+        if (mv > (float)PROT_OV_MV) {
+            s_state = PROT_OV;
+            s_fault |= FAULT_BIT_OV;
+            return s_state;
+        }
+        if (mv < (float)PROT_UV_MV) {
+            s_state = PROT_UV;
+            s_fault |= FAULT_BIT_UV;
+            return s_state;
+        }
+    }
+
+    if (cur > PROT_OC_A) {
+        s_state = PROT_OC;
+        s_fault |= FAULT_BIT_OC;
+        return s_state;
+    }
+
+    if (temp > PROT_OT_C) {
+        s_state = PROT_OT;
+        s_fault |= FAULT_BIT_OT;
+        return s_state;
+    }
+
+    return s_state;
 }
-
-
-static uint16_t s_fault;
 
 prot_state_t protect_state(void)
 {
@@ -40,7 +51,8 @@ uint16_t protect_fault_code(void)
 
 void protect_clear(void)
 {
-    /* 故障锁存，必须显式清才能恢复，防止自恢复后反复通断 */
+    /* 故障锁存，必须显式清才能恢复，防止自恢复后反复通断。
+     * 真机上这个函数只应该在确认电池恢复正常后由上位机命令触发。 */
     s_state = PROT_OK;
     s_fault = 0;
 }
